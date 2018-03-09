@@ -68,6 +68,6 @@ for(i in 1:length(unique(DroneFLC$julFL))){
   heartD<- rbind(heartD,subheart)
   
 }
-hhshs new cganges scsckxjklsjkas kalalka
+hhshs new cganges scsckxjklsjkas kalalka klsklsklsklskls
 
 

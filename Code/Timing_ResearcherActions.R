@@ -37,7 +37,7 @@ hand$Idyear<-paste(hand$BearID,hand$Year,sep="_")
 nobs<-nrow(hand)
 hand$Idyear
 
-#loop to create a total flight number regardless of flight date (should be 1 to 80) 
+#loop to create unique handling instances (den visits)
 hand$TOTno<-c(1,rep(NA,nrow(hand)-1))
 for(i in 2:nrow(hand)){
   hand$TOTno[i]<-ifelse(hand$Idyear[i]!=hand$Idyear[i-1],hand$TOTno[i-1]+1,hand$TOTno[i-1])
@@ -53,21 +53,78 @@ unique(hand$BearID)
 HR<-readRDS("E:/ZooLaptop_062817/Bear/PostDoc/BearWare_HRData/All_BWdata_Merge/HeartRate_BW_2012Dec2017_012718.R")
 head(HR)
 
-heartA$Hdiff<-c(0,diff(heartA$Hrdata))
+HR$Hdiff<-c(0,diff(HR$Hrdata))
 
-names(heartA)
-heartD<-data.frame(matrix(NA,0,11))
-colnames(heartD)<-names(heartA)
+names(HR)
+heartD<-data.frame(matrix(NA,0,19))
+colnames(heartD)<-names(HR)
 
+
+HR$Year<-format(HR$TimeStampLocalADJ,"%Y")
+HR$Idyear<-paste(HR$Bear,HR$Year,sep="_")
+
+#03/21/2018
+####MUST create a season as well to do subsetting (ID & year are not enough!!!!)
 
 #Subset heart rate data (i = hand$TOTno), based on timing within the TOTno (+1 hour???)
 
-for(i in 1:length(unique(DroneFLC$julFL))){
+for(i in 1:length(unique(hand$Idyear))){
   #heart<-subset(BearHR,subset=BearHR$EndTimeAllS>=BearMV$dtPmL[i]&BearHR$EndTimeAllS<=BearMV$dtPmL[i+1])
-  subheart<-subset(heartA,subset=heartA$SrtTimeAllSadj>=(min(DroneFLC$DTL[i]-(60*15)))&heartA$SrtTimeAllSadj<=(min(DroneFLC$DTL[i])+(60*15)))
+  subhand<-subset(hand,subset=hand$Idyear==hand$Idyear[i])
+    subheart<-subset(HR,subset=HR$Idyear==unique(subhand$Idyear))
+
+  
+  subheart2<-subset(subheart,subset=subheart$TimeStampLocalADJ>=(min(subhand$dt1P)-(60*60))&subheart$TimeStampLocalADJ<=(max(subhand$dt1P)+(60*60)))
+  heartD<- rbind(heartD,subheart2)
+  print(i)
+}
+head(hand)
+tail(heartD,80)
+
+
+heartD$Year<-format(heartD$TimeStampLocalADJ,"%Y")
+heartD$Idyear<-paste(heartD$Bear,heartD$Year,sep="_")
+
+hand$TimeStampLocalADJ<-hand$dt1P
+
+library(data.table) # v1.9.6+
+
+heartD$Idyear<-as.factor(heartD$Idyear)
+hand$Idyear<-as.factor(hand$Idyear)
+
+names(heartD)
+
+
+heartDHand<-data.frame(matrix(NA,0,21))
+
+for(i in 1:length(unique(hand$Idyear))){
+  subheart<-subset(heartD,subset=heartD$Idyear==heartD$Idyear[i])
+  subhand<-subset(hand,subset=hand$Idyear==hand$Idyear[i])
+subheart$test<-setDT(hand)[subheart, Action, roll = "nearest", on = "Idyear"&"TimeStampLocalADJ"]
+
+
+for(i in 1:length(unique(heartD$TOTno))){
+  #heart<-subset(BearHR,subset=BearHR$EndTimeAllS>=BearMV$dtPmL[i]&BearHR$EndTimeAllS<=BearMV$dtPmL[i+1])
+  subheart<-subset(HR,subset=HR$TimeStampLocalADJ>=(min(hand$dt1P[i]-(60*60)))&HR$TimeStampLocalADJ<=(max(hand$dt1P[i])+(60*60)))
   heartD<- rbind(heartD,subheart)
   
 }
-hhshs new cganges scsckxjklsjkas kalalka klsklsklsklskls
 
+
+
+
+
+
+
+
+
+
+
+
+heartDH<-merge(heartD,hand,by="Idyear",all.x=TRUE)
+
+head(heartDH)
+
+
+tail(HR$TimeStampLocalADJ)
 

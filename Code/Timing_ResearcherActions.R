@@ -119,29 +119,47 @@ hand$Idyear<-as.factor(hand$Idyear)
 names(heartD)
 head(hand)
 
+#stopping in iteration 19
+#timestamp is idenical so adjusting id den vs. set packs down by 1 min - otherwise loop will not work
+hand$TimeStampLocalADJ[hand$Idyearseas=="4061_2015_Dec"&hand$Action=="ID den"]<-"2015-12-18 12:58:00"
+
+
+
 heartDHand<-data.frame(matrix(NA,0,24))
 table(heartD$Idyearseas)
 for(i in 1:length(unique(hand$Idyearseas))){
   subhand<-subset(hand,subset=hand$Idyearseas==unique(hand$Idyearseas)[i])
+  subhand$StartObs<-min(subhand$TimeStampLocalADJ)
+  subhand$EndObs<-max(subhand$TimeStampLocalADJ)
   subheart<-subset(heartD,subset=heartD$Idyearseas==unique(as.character(subhand$Idyearseas)))
-subheart$Action<-setDT(subhand)[subheart, Action, roll = "nearest", on = "TimeStampLocalADJ"]
+
+  subheart$Action<-setDT(subhand)[subheart, Action, roll = "nearest", on = "TimeStampLocalADJ"]
 subheart$dt1P<-setDT(subhand)[subheart, dt1P, roll = "nearest", on = "TimeStampLocalADJ"]
+subheart$StartObs<-setDT(subhand)[subheart, StartObs, roll = "nearest", on = "TimeStampLocalADJ"]
+subheart$EndObs<-setDT(subhand)[subheart, EndObs, roll = "nearest", on = "TimeStampLocalADJ"]
 subheart$Bear.Response<-setDT(subhand)[subheart, Bear.Response, roll = "nearest", on = "TimeStampLocalADJ"]
 subheart$Bear.Location<-setDT(subhand)[subheart, Bear.Location, roll = "nearest", on = "TimeStampLocalADJ"]
 subheart$Comment<-setDT(subhand)[subheart, Comment, roll = "nearest", on = "TimeStampLocalADJ"]
 
+subheart$Action[subheart$TimeStampLocalADJ<unique(subheart$StartObs)]<-NA
+subheart$Action[subheart$TimeStampLocalADJ>unique(subheart$EndObs)]<-NA
+
 print(i)
-#subheart[30:60,]
 heartDHand<-rbind(heartDHand,subheart)
 }
 
+head(heartDHand)
+backup<-heartDHand
+table(heartDHand$Idyearseas)
 
-for(i in 1:length(unique(heartD$TOTno))){
-  #heart<-subset(BearHR,subset=BearHR$EndTimeAllS>=BearMV$dtPmL[i]&BearHR$EndTimeAllS<=BearMV$dtPmL[i+1])
-  subheart<-subset(HR,subset=HR$TimeStampLocalADJ>=(min(hand$dt1P[i]-(60*60)))&HR$TimeStampLocalADJ<=(max(hand$dt1P[i])+(60*60)))
-  heartD<- rbind(heartD,subheart)
+
+for(i in 1:length(unique(heartDHand$Idyearseas))){
+
+  subheart<-subset(heartDHand,subset=heartDHand$Idyearseas==heartDHand$Idyearseas[i])
+  Pl1<-ggplot(subheart, aes(x=TimeStampLocalADJ, y=Hrdata)) +geom_line()+ geom_point(size=3,fill="red",shape=21) + geom_text(aes(label=Action),col="black",cex=2,vjust=-.7)+theme_bw()+theme(axis.text.x = element_text(size=16),axis.title.x = element_text(size=16),axis.text.y = element_text(size=16),axis.title.y = element_text(size=16),legend.position="none")+xlab("Time")+ylab("Heart Rate (bpm)")
+  print(Pl1)
   
-}
+heartDHand
 
 
 
